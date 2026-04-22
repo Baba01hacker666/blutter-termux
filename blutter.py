@@ -12,8 +12,8 @@ import tempfile
 
 from dartvm_fetch_build import DartLibInfo
 
-CMAKE_CMD = "cmake"
-NINJA_CMD = "ninja"
+CMAKE_CMD = os.environ.get("CMAKE_CMD", "cmake")
+NINJA_CMD = os.environ.get("NINJA_CMD", "ninja")
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 BIN_DIR = os.path.join(SCRIPT_DIR, "bin")
@@ -62,6 +62,9 @@ class BlutterInput:
         )
 
 
+SUPPORTED_ABIS = ["arm64-v8a", "armeabi-v7a", "x86_64", "x86"]
+
+
 def find_lib_files(indir: str):
     app_file = os.path.join(indir, "libapp.so")
     if not os.path.isfile(app_file):
@@ -80,18 +83,24 @@ def find_lib_files(indir: str):
 
 def extract_libs_from_apk(apk_file: str, out_dir: str):
     with zipfile.ZipFile(apk_file, "r") as zf:
-        try:
-            app_info = zf.getinfo("lib/arm64-v8a/libapp.so")
-            flutter_info = zf.getinfo("lib/arm64-v8a/libflutter.so")
-        except:
-            sys.exit("Cannot find libapp.so or libflutter.so in the APK")
+        for abi in SUPPORTED_ABIS:
+            app_path = f"lib/{abi}/libapp.so"
+            flutter_path = f"lib/{abi}/libflutter.so"
+            try:
+                app_info = zf.getinfo(app_path)
+                flutter_info = zf.getinfo(flutter_path)
+                
+                print(f"Extracting libs for ABI: {abi}")
+                zf.extract(app_info, out_dir)
+                zf.extract(flutter_info, out_dir)
 
-        zf.extract(app_info, out_dir)
-        zf.extract(flutter_info, out_dir)
-
-        app_file = os.path.join(out_dir, app_info.filename)
-        flutter_file = os.path.join(out_dir, flutter_info.filename)
-        return app_file, flutter_file
+                app_file = os.path.join(out_dir, app_info.filename)
+                flutter_file = os.path.join(out_dir, flutter_info.filename)
+                return app_file, flutter_file
+            except KeyError:
+                continue
+        
+        sys.exit("Cannot find libapp.so or libflutter.so for any supported ABI in the APK")
 
 
 def find_compat_macro(dart_version: str, no_analysis: bool, ida_fcn: bool):
@@ -372,33 +381,38 @@ def main(
         )
 
 
-def run_command(command):
-    """Just a simple function to run commands in subprocess LOL"""
-    process = subprocess.Popen(
-        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
-    output, error = process.communicate()
-    if error:
-        return error.decode("utf-8")
-    else:
-        return output.decode("utf-8")
+def run_command(command, cwd=None):
+    """Run a command and return its output."""
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            shell=isinstance(command, str),
+        )
+        if result.returncode != 0:
+            return result.stderr
+        return result.stdout
+    except Exception as e:
+        return str(e)
 
 
 def check_for_updates_and_pull():
+    print("Checking for updates...")
     # Fetch the latest data from the remote repository
-    run_command("git fetch")
+    run_command(["git", "fetch"])
 
-    # Check if the local branch is behind the remote one
-    try_pull = run_command("git pull")
+    # Try a fast-forward pull
+    try_pull = run_command(["git", "pull", "--ff-only"])
 
-    if try_pull.__contains__("Already up to date."):
-        print(try_pull)
+    if "Already up to date." in try_pull:
+        print("Blutter is already up to date.")
+    elif "fatal: Not possible to fast-forward" in try_pull:
+        print("Local changes detected. Skipping automatic update to avoid overwriting your work.")
+        print("Please update manually using 'git pull' if needed.")
     else:
-        # Reset the local branch to the state of the remote one
-        run_command("git reset --hard HEAD")
-
-        # Pull the changes from the remote repository
-        run_command("git pull")
+        print("Blutter has been updated.")
 
 
 if __name__ == "__main__":

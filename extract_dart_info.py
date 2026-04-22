@@ -30,12 +30,17 @@ def extract_snapshot_hash_flags(libapp_file):
 def extract_libflutter_info(libflutter_file):
     with open(libflutter_file, 'rb') as f:
         elf = ELFFile(f)
-        if elf.header.e_machine == 'EM_AARCH64': # 183
+        machine = elf.header.e_machine
+        if machine == 'EM_AARCH64':
             arch = 'arm64'
-        elif elf.header.e_machine == 'EM_IA_64': # 50
+        elif machine == 'EM_X86_64':
             arch = 'x64'
+        elif machine == 'EM_ARM':
+            arch = 'arm'
+        elif machine == 'EM_386':
+            arch = 'x86'
         else:
-            assert False, "Unsupport architecture: " + elf.header.e_machine
+            sys.exit(f"Unsupported architecture: {machine}")
 
         section = elf.get_section_by_name('.rodata')
         data = section.data()

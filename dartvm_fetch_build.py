@@ -6,9 +6,9 @@ import subprocess
 import sys
 
 # assume git and cmake (64 bits) command is in PATH
-GIT_CMD = "git"
-CMAKE_CMD = "cmake"
-NINJA_CMD = "ninja"
+GIT_CMD = os.environ.get("GIT_CMD", "git")
+CMAKE_CMD = os.environ.get("CMAKE_CMD", "cmake")
+NINJA_CMD = os.environ.get("NINJA_CMD", "ninja")
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 CMAKE_TEMPLATE_FILE = os.path.join(SCRIPT_DIR, "scripts", "CMakeLists.txt")
