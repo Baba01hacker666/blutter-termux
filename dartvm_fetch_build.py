@@ -90,7 +90,10 @@ class DartLibInfo:
 
 
 def checkout_dart(info: DartLibInfo):
-    clonedir = os.path.join(SDK_DIR, "v" + info.version)
+    clone_key = "v" + info.version
+    if info.dart_revision:
+        clone_key += "_" + info.dart_revision[:12]
+    clonedir = os.path.join(SDK_DIR, clone_key)
 
     # if no version file,assume previous clone is failed. delete the whole directory and try again.
     version_file = os.path.join(clonedir, "runtime", "vm", "version.cc")
