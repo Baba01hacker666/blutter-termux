@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "DartThreadInfo.h"
+#include <mutex>
 
 static std::unordered_map<intptr_t, std::string> threadOffsetNames;
 static std::unordered_map<intptr_t, LeafFunctionInfo> leafFunctionMap;

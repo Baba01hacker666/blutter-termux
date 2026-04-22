@@ -3233,22 +3233,32 @@ std::unique_ptr<ILInstr> FunctionAnalyzer::processLoadStore(AsmIterator& insn)
 			}
 			else {
 				// register as index
-				INSN_ASSERT(insn.ops(2).shift.type == ARM64_SFT_LSL &&
-					(insn.ops(2).shift.value == dart::kCompressedWordSizeLog2 ||
-						(insn.ops(2).shift.value == dart::kCompressedWordSizeLog2 - 1 || insn.ops(2).ext == ARM64_EXT_SXTW)));
+				const auto shift = insn.ops(2).shift;
+				const auto ext = insn.ops(2).ext;
+				const bool isScaledCompressedIndex =
+					shift.type == ARM64_SFT_LSL &&
+					(shift.value == dart::kCompressedWordSizeLog2 ||
+						(shift.value == dart::kCompressedWordSizeLog2 - 1 && ext == ARM64_EXT_SXTW));
+				if (!isScaledCompressedIndex)
+					return nullptr;
 				idx = VarStorage(A64::Register{ insn.ops(2).reg });
 				++insn;
 
-				INSN_ASSERT(insn.id() == ARM64_INS_ADD);
-				INSN_ASSERT(insn.ops(0).reg == CSREG_DART_WB_SLOT);
-				INSN_ASSERT(insn.ops(1).reg == CSREG_DART_WB_SLOT);
-				INSN_ASSERT(insn.ops(2).imm == dart::Array::data_offset() - dart::kHeapObjectTag);
+				if (insn.id() != ARM64_INS_ADD ||
+					insn.ops(0).reg != CSREG_DART_WB_SLOT ||
+					insn.ops(1).reg != CSREG_DART_WB_SLOT ||
+					insn.ops(2).type != ARM64_OP_IMM ||
+					insn.ops(2).imm != dart::Array::data_offset() - dart::kHeapObjectTag)
+					return nullptr;
 				++insn;
 			}
 
-			INSN_ASSERT(insn.id() == ARM64_INS_STR);
-			INSN_ASSERT(A64::Register{ insn.ops(0).reg } == valReg && GetCsRegSize(insn.ops(0).reg) == dart::kCompressedWordSize);
-			INSN_ASSERT(insn.ops(1).mem.base == CSREG_DART_WB_SLOT && insn.ops(1).mem.disp == 0);
+			if (insn.id() != ARM64_INS_STR ||
+				A64::Register{ insn.ops(0).reg } != valReg ||
+				GetCsRegSize(insn.ops(0).reg) != dart::kCompressedWordSize ||
+				insn.ops(1).mem.base != CSREG_DART_WB_SLOT ||
+				insn.ops(1).mem.disp != 0)
+				return nullptr;
 			++insn;
 
 			const auto il_wb = processWriteBarrierInstr(insn);
