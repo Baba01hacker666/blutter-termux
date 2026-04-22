@@ -11,12 +11,14 @@ For high priority missing features, see [TODO](#todo)
 
 ## Termux
 
-- Same as debian but needs ndk . if you dont want ndk then remove android library dependencies related files in dartsdk
-- I actually liked [fmt](https://github.com/fmtlib/fmt.git) library thats the main reason replaced standard format
+- Same as Debian but needs NDK. If you do not want NDK, remove the Android library dependency files from `dartsdk`.
+- I replaced `std::format` usage with [fmt](https://github.com/fmtlib/fmt.git) to make the project easier to build in Termux.
 - Install `fmt`: `pkg install fmt`
-- It should work for both dartsdk stable/beta builds didnt checked for dev builds
-- If any error related to capstone first check if is present in include dir  
-    ```pkg-config --cflags capstone```
+- It should work for stable and beta Dart SDK builds. Dev builds are not verified.
+- If you hit a Capstone include error, check that Termux exposes the headers:
+  ```shell
+  pkg-config --cflags capstone
+  ```
 
 **OR You can copy paste below command to install all requirements:**
 ```
@@ -24,7 +26,7 @@ pip install requests pyelftools && pkg install -y git cmake ninja build-essentia
 ```
 
 > [!NOTE]
-> In case you face errors related to `no member named 'format'`, you need to replace all occurance of __std::format__ with __fmt::format__ using below shell command:
+> In case you face errors related to `no member named 'format'`, replace all occurrences of `std::format` with `fmt::format`:
 >  ```shell
 >  find -type f -exec sed -i 's/std::format/fmt::format/g' {} +
 >  ```
@@ -36,7 +38,7 @@ https://github.com/dedshit/blutter-termux/assets/62318734/b7376844-96b0-4aa0-a39
 ## Environment Setup
 This application uses C++20 Formatting library. It requires very recent C++ compiler such as g++>=13, Clang>=16.
 
-I recommend using Linux OS (only tested on Deiban sid/trixie) because it is easy to setup.
+I recommend Linux. This repo has only been tested on Debian sid/trixie.
 
 ### Debian Unstable (gcc 13)
 - Install build tools and depenencies
@@ -53,30 +55,6 @@ apt install python3-pyelftools python3-requests git cmake ninja-build \
 python scripts\init_env_win.py
 ```
 - Start "x64 Native Tools Command Prompt"
-
-### Docker
-- Build the Docker image:
-```
-docker build -t blutter .
-```
-- Run Blutter using the provided script:
-```
-docker/run.sh /path/to/lib out/
-```
-- The script accepts the same arguments as `blutter.py`:
-```
-docker/run.sh <indir> <outdir> [extra args...]
-```
-  - `indir`: Path to APK file or directory containing libapp.so and libflutter.so
-  - `outdir`: Output directory for analysis results
-  - `extra args`: Additional arguments to pass to blutter (e.g., `--no-analysis`, `--ida-fcn`)
-
-- Examples:
-```
-docker/run.sh /path/to/app.apk /path/to/output
-docker/run.sh /path/to/lib/arm64-v8a /path/to/output
-docker/run.sh /path/to/lib/arm64-v8a /path/to/output --no-analysis --ida-fcn
-```
 
 ### macOS Ventura and Sonoma (clang 16)
 - Install XCode
@@ -118,9 +96,13 @@ Blutter can also analyze `.so` files directly. This can be done in two ways:
 If the Blutter executable for the required Dart version does not exist, the script will automatically checkout the Dart source code and compile it.
 
 ## Update
-You can use ```git pull``` to update and run blutter.py with ```--rebuild``` option to force rebuild the executable
+Updates are no longer checked automatically during normal runs.
+
+Use `git pull` manually, or ask the CLI to fast-forward the checkout before execution with `--check-updates`.
+
+You can also force a rebuild of the executable:
 ```
-python3 blutter.py path/to/app/lib/arm64-v8a out_dir --rebuild
+python3 blutter.py path/to/app/lib/arm64-v8a out_dir --check-updates --rebuild
 ```
 
 ## Output files

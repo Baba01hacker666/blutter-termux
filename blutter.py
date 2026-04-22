@@ -22,6 +22,10 @@ PKG_LIB_DIR = os.path.join(SCRIPT_DIR, "packages", "lib")
 BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
 
 
+class BlutterError(RuntimeError):
+    pass
+
+
 BANNER = r"""
 __________ .__         __      __                      
 \______   \|  |  __ __/  |_  _/  |_   ____ _______     
@@ -82,13 +86,13 @@ def find_lib_files(indir: str):
     if not os.path.isfile(app_file):
         app_file = os.path.join(indir, "App")
         if not os.path.isfile(app_file):
-            sys.exit("Cannot find libapp file")
+            raise BlutterError(f"Cannot find libapp file in {indir}")
 
     flutter_file = os.path.join(indir, "libflutter.so")
     if not os.path.isfile(flutter_file):
         flutter_file = os.path.join(indir, "Flutter")
         if not os.path.isfile(flutter_file):
-            sys.exit("Cannot find libflutter file")
+            raise BlutterError(f"Cannot find libflutter file in {indir}")
 
     return os.path.abspath(app_file), os.path.abspath(flutter_file)
 
@@ -112,7 +116,9 @@ def extract_libs_from_apk(apk_file: str, out_dir: str):
             except KeyError:
                 continue
         
-        sys.exit("Cannot find libapp.so or libflutter.so for any supported ABI in the APK")
+        raise BlutterError(
+            "Cannot find libapp.so and libflutter.so for any supported ABI in the APK"
+        )
 
 
 def find_compat_macro(dart_version: str, no_analysis: bool, ida_fcn: bool):
@@ -272,15 +278,14 @@ def build_and_run(input: BlutterInput):
         dbg_output_path = os.path.abspath(os.path.join(input.outdir, "out"))
         dbg_cmd_args = f"-i {input.libapp_path} -o {dbg_output_path}"
         vscmd_ver = os.getenv("VSCMD_VER")
-        assert vscmd_ver is not None, (
-            "Need run blutter in Visual Studio Develeper console"
-        )
+        if vscmd_ver is None:
+            raise BlutterError("Need to run blutter in a Visual Studio Developer console")
         if vscmd_ver.startswith("18."):
             generator = "Visual Studio 18 2026"
         elif vscmd_ver.startswith("17."):
             generator = "Visual Studio 17 2022"
         else:
-            assert False, "Unknown Visual Studio version"
+            raise BlutterError(f"Unknown Visual Studio version: {vscmd_ver}")
         subprocess.run(
             [
                 CMAKE_CMD,
@@ -306,9 +311,11 @@ def build_and_run(input: BlutterInput):
         if input.rebuild_blutter:
             # do not use SDK path for checking source code because Blutter does not depended on it and SDK might be removed
             cmake_blutter(input)
-            assert os.path.isfile(input.blutter_file), (
-                "Build complete but cannot find Blutter binary: " + input.blutter_file
-            )
+            if not os.path.isfile(input.blutter_file):
+                raise BlutterError(
+                    "Build completed but cannot find Blutter binary: "
+                    + input.blutter_file
+                )
 
         # execute blutter
         subprocess.run(
@@ -416,16 +423,22 @@ def run_command(command, cwd=None):
 def check_for_updates_and_pull():
     print("Checking for updates...")
     # Fetch the latest data from the remote repository
-    run_command(["git", "fetch"])
+    fetch_result = run_command(["git", "fetch"])
 
     # Try a fast-forward pull
     try_pull = run_command(["git", "pull", "--ff-only"])
 
-    if "Already up to date." in try_pull:
+    if "fatal:" in fetch_result.lower():
+        print("Skipping update check because git fetch failed.")
+        print(fetch_result.strip())
+    elif "Already up to date." in try_pull:
         print("Blutter is already up to date.")
     elif "fatal: Not possible to fast-forward" in try_pull:
         print("Local changes detected. Skipping automatic update to avoid overwriting your work.")
         print("Please update manually using 'git pull' if needed.")
+    elif "fatal:" in try_pull.lower():
+        print("Skipping automatic update because git pull failed.")
+        print(try_pull.strip())
     else:
         print("Blutter has been updated.")
 
@@ -467,10 +480,10 @@ if __name__ == "__main__":
         help='Run without libflutter (indir become libapp.so) by specify dart version such as "3.4.2_android_arm64"',
     )
     parser.add_argument(
-        "--nu",
-        action="store_false",
-        default=True,
-        help="Don't check for updates",
+        "--check-updates",
+        action="store_true",
+        default=False,
+        help="Check the git remote and fast-forward this checkout before running",
     )
     parser.add_argument(
         "--ida-fcn",
@@ -480,25 +493,29 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if args.nu:
-        check_for_updates_and_pull()
+    try:
+        if args.check_updates:
+            check_for_updates_and_pull()
 
-    if args.dart_version is None:
-        main(
-            args.indir,
-            args.outdir,
-            args.rebuild,
-            args.vs_sln,
-            args.no_analysis,
-            args.ida_fcn,
-        )
-    else:
-        main_no_flutter(
-            args.indir,
-            args.dart_version,
-            args.outdir,
-            args.rebuild,
-            args.vs_sln,
-            args.no_analysis,
-            args.ida_fcn,
-        )
+        if args.dart_version is None:
+            main(
+                args.indir,
+                args.outdir,
+                args.rebuild,
+                args.vs_sln,
+                args.no_analysis,
+                args.ida_fcn,
+            )
+        else:
+            main_no_flutter(
+                args.indir,
+                args.dart_version,
+                args.outdir,
+                args.rebuild,
+                args.vs_sln,
+                args.no_analysis,
+                args.ida_fcn,
+            )
+    except (RuntimeError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(1)

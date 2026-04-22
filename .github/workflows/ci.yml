@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: python -m pip install requests pyelftools
+
+      - name: Compile Python sources
+        run: |
+          python -m py_compile \
+            blutter.py \
+            dartvm_fetch_build.py \
+            extract_dart_info.py \
+            scripts/init_env_win.py \
+            scripts/dartvm_make_version.py \
+            scripts/dartvm_create_srclist.py
+
+      - name: CLI help smoke test
+        run: python blutter.py --help

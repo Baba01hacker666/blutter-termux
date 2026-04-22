@@ -81,7 +81,10 @@ for lib in ('async', 'concurrent', 'core', 'developer', 'ffi', 'isolate', 'math'
 double_conversion_dir = BASEDIR+'/third_party/double-conversion/src'
 if not os.path.isdir(double_conversion_dir):
     double_conversion_dir = SDKDIR+'/third_party/double-conversion/src'
-    assert os.path.isdir(double_conversion_dir)
+    if not os.path.isdir(double_conversion_dir):
+        raise FileNotFoundError(
+            f"Cannot find double-conversion sources under {BASEDIR} or {SDKDIR}"
+        )
 cc_srcs.extend(get_src_from_path(double_conversion_dir))
 
 #print('VMSRCS='+' '.join(cc_srcs))
@@ -103,4 +106,3 @@ with open('sourcelist.cmake', 'w') as f:
     #f.write('set(PUB_HDRS \n    ')
     #f.write('\n    '.join(hdrs))
     #f.write('\n)\n')
-
