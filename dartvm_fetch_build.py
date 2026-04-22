@@ -57,10 +57,12 @@ class DartLibInfo:
         arch: str,
         has_compressed_ptrs: bool | None = None,
         snapshot_hash: str | None = None,
+        dart_revision: str | None = None,
     ):
         self.os_name = os_name
         self.arch = arch
         self.snapshot_hash = snapshot_hash
+        self.dart_revision = dart_revision
         if has_compressed_ptrs is None:
             # use same as flutter default configuration
             # TODO: old Dart version has no pointer compression
@@ -103,25 +105,43 @@ def checkout_dart(info: DartLibInfo):
 
     # clone Dart source code
     if not os.path.exists(clonedir):
-        # minimum clone repository at the target branch
-        subprocess.run(
-            [
-                GIT_CMD,
-                "-c",
-                "advice.detachedHead=false",
-                "clone",
-                "-b",
-                info.version,
-                "--depth",
-                "1",
-                "--filter=blob:none",
-                "--sparse",
-                "--progress",
-                DART_GIT_URL,
-                clonedir,
-            ],
-            check=True,
-        )
+        if info.dart_revision:
+            subprocess.run([GIT_CMD, "init", clonedir], check=True)
+            subprocess.run(
+                [GIT_CMD, "remote", "add", "origin", DART_GIT_URL],
+                cwd=clonedir,
+                check=True,
+            )
+            subprocess.run(
+                [GIT_CMD, "fetch", "--depth", "1", "origin", info.dart_revision],
+                cwd=clonedir,
+                check=True,
+            )
+            subprocess.run(
+                [GIT_CMD, "checkout", "--detach", "FETCH_HEAD"],
+                cwd=clonedir,
+                check=True,
+            )
+        else:
+            # minimum clone repository at the target branch
+            subprocess.run(
+                [
+                    GIT_CMD,
+                    "-c",
+                    "advice.detachedHead=false",
+                    "clone",
+                    "-b",
+                    info.version,
+                    "--depth",
+                    "1",
+                    "--filter=blob:none",
+                    "--sparse",
+                    "--progress",
+                    DART_GIT_URL,
+                    clonedir,
+                ],
+                check=True,
+            )
         # checkout only needed sources (runtime and tools)
         # since Dart 3.3 "third_party/double-conversion" is moved to outside of "runtime" directory
         subprocess.run(

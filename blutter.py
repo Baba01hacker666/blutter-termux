@@ -240,7 +240,7 @@ def get_dart_lib_info(libapp_path: str, libflutter_path: str) -> DartLibInfo:
     # getting dart version
     from extract_dart_info import extract_dart_info
 
-    dart_version, snapshot_hash, flags, arch, os_name = extract_dart_info(
+    dart_version, snapshot_hash, flags, arch, os_name, dart_revision = extract_dart_info(
         libapp_path, libflutter_path
     )
     print(
@@ -249,7 +249,14 @@ def get_dart_lib_info(libapp_path: str, libflutter_path: str) -> DartLibInfo:
     print("flags: " + " ".join(flags))
 
     has_compressed_ptrs = "compressed-pointers" in flags
-    return DartLibInfo(dart_version, os_name, arch, has_compressed_ptrs, snapshot_hash)
+    return DartLibInfo(
+        dart_version,
+        os_name,
+        arch,
+        has_compressed_ptrs,
+        snapshot_hash,
+        dart_revision=dart_revision,
+    )
 
 
 def build_and_run(input: BlutterInput):

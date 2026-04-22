@@ -164,19 +164,20 @@ def extract_dart_info(libapp_file: str, libflutter_file: str):
     # print('possible engine ids', engine_ids)
     # print('dart version', dart_version)
 
+    dart_revision = None
     if dart_version is None:
         _, sdk_url, _ = get_dart_sdk_url_size(engine_ids)
         # print(engine_id)
         # print(sdk_url)
         # print(sdk_size)
 
-        _, dart_version = get_dart_commit(sdk_url)
+        dart_revision, dart_version = get_dart_commit(sdk_url)
         # print(commit_id)
         # print(dart_version)
         #assert dart_version == dart_version_sdk
     
     # TODO: os (android or ios) and architecture (arm64 or x64)
-    return dart_version, snapshot_hash, flags, arch, os_name
+    return dart_version, snapshot_hash, flags, arch, os_name, dart_revision
 
 
 if __name__ == "__main__":
