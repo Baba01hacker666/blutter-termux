@@ -17,6 +17,11 @@ int main(int argc, char** argv)
 	try {
 		parser.ParseCLI(argc, argv);
 
+		std::cout << "========================================================\n";
+		std::cout << " B(l)utter - Customized by Baba01hacker666\n";
+		std::cout << " Doraemon Cyber Team\n";
+		std::cout << "========================================================\n\n";
+
 		auto& libappPath = args::get(infile);
 
 		std::filesystem::path outDir{ args::get(outdir) };

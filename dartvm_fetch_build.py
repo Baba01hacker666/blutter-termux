@@ -255,7 +255,10 @@ def cmake_dart(info: DartLibInfo, target_dir: str):
     )
 
     # build and install dart vm library to packages directory
-    subprocess.run([NINJA_CMD], cwd=builddir, check=True)
+    import multiprocessing
+    num_cores = multiprocessing.cpu_count()
+    print(f"Building Dart VM with {num_cores} cores... [Doraemon Cyber Team Speedup]")
+    subprocess.run([NINJA_CMD, "-j", str(num_cores)], cwd=builddir, check=True)
     subprocess.run([CMAKE_CMD, "--install", "."], cwd=builddir, check=True)
 
 

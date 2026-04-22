@@ -22,6 +22,18 @@ PKG_LIB_DIR = os.path.join(SCRIPT_DIR, "packages", "lib")
 BUILD_DIR = os.path.join(SCRIPT_DIR, "build")
 
 
+BANNER = r"""
+__________ .__         __      __                      
+\______   \|  |  __ __/  |_  _/  |_   ____ _______     
+ |    |  _/|  | |  |  \   __\ \   __\_/ __ \\_  __ \    
+ |    |   \|  |_|  |  /|  |    |  |  \  ___/ |  | \/    
+ |______  /|____/____/ |__|    |__|   \___  >|__|       
+        \/                                \/            
+    B(l)utter - Flutter Reversing Tool
+    Maintained by: Baba01hacker666
+    Team: Doraemon Cyber Team
+"""
+
 class BlutterInput:
     def __init__(
         self,
@@ -211,7 +223,10 @@ def cmake_blutter(input: BlutterInput):
     )
 
     # build and install blutter
-    subprocess.run([NINJA_CMD], cwd=builddir, check=True)
+    import multiprocessing
+    num_cores = multiprocessing.cpu_count()
+    print(f"Building Blutter with {num_cores} cores... [Doraemon Cyber Team Speedup]")
+    subprocess.run([NINJA_CMD, "-j", str(num_cores)], cwd=builddir, check=True)
     subprocess.run([CMAKE_CMD, "--install", "."], cwd=builddir, check=True)
 
 
@@ -416,8 +431,11 @@ def check_for_updates_and_pull():
 
 
 if __name__ == "__main__":
+    print(BANNER)
     parser = argparse.ArgumentParser(
-        prog="B(l)utter", description="Reversing a flutter application tool"
+        prog="blutter",
+        description="Reversing a flutter application tool - Customized by Baba01hacker666 [Doraemon Cyber Team]",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     # TODO: accept ipa
     parser.add_argument(

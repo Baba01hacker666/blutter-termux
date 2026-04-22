@@ -1,7 +1,8 @@
 
+# B(l)utter-Termux
+### Customized by Baba01hacker666 [Doraemon Cyber Team]
 
-# B(l)utter
-Flutter Mobile Application Reverse Engineering Tool by Compiling Dart AOT Runtime
+Flutter Mobile Application Reverse Engineering Tool by Compiling Dart AOT Runtime. Optimized for Termux and speed.
 
 Currently the application supports only Android libapp.so (arm64 only).
 Also the application is currently work only against recent Dart versions.

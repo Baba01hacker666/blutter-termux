@@ -1,5 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
+echo "=========================================================="
+echo " Blutter Termux Setup - Baba01hacker666"
+echo " Doraemon Cyber Team"
+echo "=========================================================="
+
 # Update packages
 pkg update -y
 
