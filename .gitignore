@@ -15,3 +15,6 @@ __pycache__/
 *.dll
 *.lib
 venv/
+# AI Agent Context Files
+gemini.md
+codex.md
